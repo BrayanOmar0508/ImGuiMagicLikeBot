@@ -15,7 +15,7 @@ CONFIG_FILE = "like_channels.json"
 class LikeCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api_host = "https://free-fire-like1.p.rapidapi.com"
+        self.api_host = "https://likethugnx.vercel.app/"
         self.config_data = self.load_config()
         self.cooldowns = {}
         self.session = aiohttp.ClientSession()
@@ -133,16 +133,17 @@ class LikeCommands(commands.Cog):
                     if data.get("status") == 1:
                         embed.description = (
                             f"\n"
-                            f"┌  ACCOUNT\n"
-                            f"├─ NICKNAME: {data.get('player', 'Unknown')}\n"
+                            f"┌─ ACCOUNT\n"
+                            f"├─ NICKNAME: {data.get('nickname', 'Unknown')}\n"
                             f"├─ UID: {uid}\n"
+                            f"├─ REGION: {data.get('region', 'Unknown')}\n"
                             f"└─ RESULT:\n"
                             f"   ├─ ADDED: +{data.get('likes_added', 0)}\n"
                             f"   ├─ BEFORE: {data.get('likes_before', 'N/A')}\n"
                             f"   └─ AFTER: {data.get('likes_after', 'N/A')}\n"
                         )
                     else:
-                        embed.description = "\n┌MAX LIKES\n└─This UID has already received the maximum likes today.\n"
+                        embed.description = "\nMAX LIKES\nThis UID has already received the maximum likes today.\n"
 
                     embed.set_footer(text="DEVELOPED BY THUG")
                     embed.description += "\n🔗 JOIN : https://discord.gg/awPm5B3QFg"
