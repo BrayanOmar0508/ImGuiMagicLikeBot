@@ -83,13 +83,13 @@ class Seemu(commands.Bot):
     async def update_activity_task(self):
 
         try:
-            server_count = len(self.guilds) #
-            activity = discord.Game(name=f"Sharing likes on {server_count} servers !! ")
+            server_count = len(self.guilds)  # Number of servers the bot is in
+            activity = discord.Game(name=f"Sharing likes on {server_count} servers!!")
             await self.change_presence(activity=activity)
-            print(f"Activité mise à jour : Partage de likes sur {server_count} serveurs")
+            print(f"Activity updated: Sharing likes on {server_count} servers")
 
         except Exception as e:
-            print(f"⚠️ Erreur lors de la mise à jour de l'activité : {e}")
+            print(f"⚠️ Error while updating activity: {e}")
             traceback.print_exc()
 
     @update_activity_task.before_loop
