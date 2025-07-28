@@ -59,8 +59,9 @@ class LikeCommands(commands.Cog):
     async def cog_load(self):
         pass
 
-    @commands.hybrid_command(name="setlikechannel", description="✅ Allow the /like command in a channel.")
+    @commands.hybrid_command(name="setlikechannel", description="✅ Allow the /like command in a channel.", with_app_command=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     @app_commands.describe(channel="The channel to allow the /like command in.")
     async def set_like_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         guild_id = str(ctx.guild.id)
@@ -77,8 +78,9 @@ class LikeCommands(commands.Cog):
             await ctx.send(f"✅ {channel.mention} has been added to allowed /like channels.", ephemeral=True)
 
 
-    @commands.hybrid_command(name="removelikechannel", description="❌ Disallow the /like command in a channel.")
+    @commands.hybrid_command(name="removelikechannel", description="❌ Disallow the /like command in a channel.", with_app_command=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     @app_commands.describe(channel="The channel to disallow the /like command in.")
     async def remove_like_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         guild_id = str(ctx.guild.id)
@@ -95,7 +97,9 @@ class LikeCommands(commands.Cog):
             await ctx.send(f"⚠️ {channel.mention} was not in the list of allowed channels.", ephemeral=True)
 
 
-    @commands.hybrid_command(name="likechannels", description="📜 List allowed channels for the /like command.")
+    @commands.hybrid_command(name="likechannels", description="📜 List allowed channels for the /like command.", with_app_command=True)
+    @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     async def list_like_channels(self, ctx: commands.Context):
         guild_id = str(ctx.guild.id)
         server_config = self.config_data["servers"].get(guild_id, {})
