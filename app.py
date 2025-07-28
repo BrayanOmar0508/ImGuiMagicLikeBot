@@ -40,7 +40,8 @@ if not TOKEN:
     raise ValueError("TOKEN not found in environment variables")
 
 extensions = [
-    "cogs.likeCommands"
+    "cogs.likeCommands",
+    "cogs.infoCommands"
 ]
 
 
@@ -91,6 +92,8 @@ class Seemu(commands.Bot):
         except Exception as e:
             print(f"⚠️ Error while updating activity: {e}")
             traceback.print_exc()
+
+
 
     @update_activity_task.before_loop
     async def before_update_activity_task(self):
