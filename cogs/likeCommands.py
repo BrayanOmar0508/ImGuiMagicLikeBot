@@ -15,7 +15,7 @@ CONFIG_FILE = "like_channels.json"
 class LikeCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api_host = "https://likethugnx.vercel.app/"
+        self.api_host = "   "
         self.config_data = self.load_config()
         self.cooldowns = {}
         self.session = aiohttp.ClientSession()
@@ -59,14 +59,28 @@ class LikeCommands(commands.Cog):
     async def cog_load(self):
         pass
 
-    @commands.hybrid_command(name="setlikechannel", description="Sets the channels where the /like command is allowed.")
+    @commands.hybrid_command(name="setlikechannel", description="✅ Allow the /like command in a channel.")
     @commands.has_permissions(administrator=True)
-    @app_commands.describe(channel="The channel to allow/disallow the /like command in.")
+    @app_commands.describe(channel="The channel to allow the /like command in.")
     async def set_like_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-        if ctx.guild is None:
-            await ctx.send("This command can only be used in a server.", ephemeral=True)
-            return
+        guild_id = str(ctx.guild.id)
+        server_config = self.config_data["servers"].setdefault(guild_id, {})
+        like_channels = server_config.setdefault("like_channels", [])
 
+        channel_id_str = str(channel.id)
+
+        if channel_id_str in like_channels:
+            await ctx.send(f"⚠️ {channel.mention} is already allowed for /like.", ephemeral=True)
+        else:
+            like_channels.append(channel_id_str)
+            self.save_config()
+            await ctx.send(f"✅ {channel.mention} has been added to allowed /like channels.", ephemeral=True)
+
+
+    @commands.hybrid_command(name="removelikechannel", description="❌ Disallow the /like command in a channel.")
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(channel="The channel to disallow the /like command in.")
+    async def remove_like_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         guild_id = str(ctx.guild.id)
         server_config = self.config_data["servers"].setdefault(guild_id, {})
         like_channels = server_config.setdefault("like_channels", [])
@@ -76,11 +90,32 @@ class LikeCommands(commands.Cog):
         if channel_id_str in like_channels:
             like_channels.remove(channel_id_str)
             self.save_config()
-            await ctx.send(f"✅ Channel {channel.mention} has been **removed** from allowed channels for /like commands. The command is now **disallowed** there.", ephemeral=True)
+            await ctx.send(f"❌ {channel.mention} has been removed from allowed /like channels.", ephemeral=True)
         else:
-            like_channels.append(channel_id_str)
-            self.save_config()
-            await ctx.send(f"✅ Channel {channel.mention} is now **allowed** for /like commands. The command will **only** work in specified channels if any are set.", ephemeral=True)
+            await ctx.send(f"⚠️ {channel.mention} was not in the list of allowed channels.", ephemeral=True)
+
+
+    @commands.hybrid_command(name="likechannels", description="📜 List allowed channels for the /like command.")
+    async def list_like_channels(self, ctx: commands.Context):
+        guild_id = str(ctx.guild.id)
+        server_config = self.config_data["servers"].get(guild_id, {})
+        like_channels = server_config.get("like_channels", [])
+
+        if not like_channels:
+            await ctx.send("ℹ️ No channels are restricted — `/like` is allowed everywhere.", ephemeral=True)
+            return
+
+        mentions = []
+        for channel_id in like_channels:
+            channel = self.bot.get_channel(int(channel_id))
+            if channel:
+                mentions.append(channel.mention)
+            else:
+                mentions.append(f"<#{channel_id}>")
+
+        channels_list = "\n".join(mentions)
+        await ctx.send(f"✅ `/like` is allowed in the following channels:\n{channels_list}", ephemeral=True)
+
 
     @commands.hybrid_command(name="like", description="Sends likes to a Free Fire player")
     @app_commands.describe(uid="Player UID (numbers only, minimum 6 characters)")
@@ -88,12 +123,24 @@ class LikeCommands(commands.Cog):
         is_slash = ctx.interaction is not None
 
         if not await self.check_channel(ctx):
-            msg = "This command is not available in this channel. Please use it in an authorized channel."
-            if is_slash:
+            guild_id = str(ctx.guild.id)
+            allowed_ids = self.config_data["servers"].get(guild_id, {}).get("like_channels", [])
+
+            if allowed_ids:
+                allowed_mentions = ", ".join(f"<#{ch_id}>" for ch_id in allowed_ids)
+                msg = (
+                    "🚫 This command is **not allowed** in this channel.\n"
+                    f"✅ You can use it in: {allowed_mentions}"
+            )
+            else:
+                msg = "🚫 This command is **not allowed** in this channel and no allowed channels are configured."
+
+            if hasattr(ctx, "response") and not ctx.response.is_done():
                 await ctx.response.send_message(msg, ephemeral=True)
             else:
-                await ctx.reply(msg, mention_author=False)
+                await ctx.reply(msg, mention_author=False,ephemeral=True)
             return
+
 
         user_id = ctx.author.id
         cooldown = 30
@@ -116,8 +163,8 @@ class LikeCommands(commands.Cog):
                     if response.status == 404:
                         await self._send_player_not_found(ctx, uid)
                         return
-                    if response.status ==429 :
-                        await self._send_api_limit_reached
+                    # if response.status ==429 :
+                        # await self._send_api_limit_reached
                     if response.status != 200:
                         print(f"API Error: {response.status} - {await response.text()}")
                         await self._send_api_error(ctx)
@@ -132,8 +179,8 @@ class LikeCommands(commands.Cog):
 
                     if data.get("status") == 1:
                         embed.description = (
-                            f"\n"
-                            f"┌─ ACCOUNT\n"
+                            f"```\n"
+                            f"┌  ACCOUNT\n"
                             f"├─ NICKNAME: {data.get('nickname', 'Unknown')}\n"
                             f"├─ UID: {uid}\n"
                             f"├─ REGION: {data.get('region', 'Unknown')}\n"
@@ -141,12 +188,17 @@ class LikeCommands(commands.Cog):
                             f"   ├─ ADDED: +{data.get('likes_added', 0)}\n"
                             f"   ├─ BEFORE: {data.get('likes_before', 'N/A')}\n"
                             f"   └─ AFTER: {data.get('likes_after', 'N/A')}\n"
-                        )
+                            f"```"
+                    )
                     else:
-                        embed.description = "\nMAX LIKES\nThis UID has already received the maximum likes today.\n"
+                        embed.description = (
+                        f"\n"
+                        f"``` MAX LIKES\n"
+                        f"This UID has already received the maximum likes today. ```\n"
+                        )
 
-                    embed.set_footer(text="ImGui Magic")
-                    # embed.description += "\n🔗 JOIN : https://discord.gg/awPm5B3QFg"
+                    embed.set_footer(text="</>:  BRAYANZIN.CX44")
+                    embed.description += "\n JOIN : https://discord.gg/VvJWxj6TrU"
                     await ctx.send(embed=embed, mention_author=True, ephemeral=is_slash)
 
         except asyncio.TimeoutError:
