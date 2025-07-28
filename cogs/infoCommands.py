@@ -23,20 +23,14 @@ class InfoCommands(commands.Cog):
         self.config_data = self.load_config()
         self.cooldowns = {}
 
-   
-
-    
-
     def convert_unix_timestamp(self ,timestamp: int) -> str:
         return datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-
-
 
     def check_request_limit(self, guild_id):
         try:
             return self.is_server_subscribed(guild_id) or not self.is_limit_reached(guild_id)
         except Exception as e:
-            print(f"Error checking request limit: {e}")
+            print(f"Error al verificar el límite de solicitudes: {e}")
             return False
 
     def load_config(self):
@@ -60,7 +54,7 @@ class InfoCommands(commands.Cog):
                     loaded_config.setdefault("servers", {})
                     return loaded_config
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Error loading config: {e}")
+                print(f"Error al cargar la configuración: {e}")
                 return default_config
         return default_config
 
@@ -69,26 +63,24 @@ class InfoCommands(commands.Cog):
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(self.config_data, f, indent=4, ensure_ascii=False)
         except IOError as e:
-            print(f"Error saving config: {e}")
-
-
+            print(f"Error al guardar la configuración: {e}")
 
     async def is_channel_allowed(self, ctx):
         try:
             guild_id = str(ctx.guild.id)
             allowed_channels = self.config_data["servers"].get(guild_id, {}).get("info_channels", [])
 
-            # Autoriser tous les salons si aucun salon n'a été configuré pour ce serveur
+            # Permitir todos los canales si no se ha configurado ninguno para este servidor
             if not allowed_channels:
                 return True
 
-            # Sinon, vérifier si le salon actuel est dans la liste autorisée
+            # De lo contrario, verificar si el canal actual está en la lista permitida
             return str(ctx.channel.id) in allowed_channels
         except Exception as e:
-            print(f"Error checking channel permission: {e}")
+            print(f"Error al verificar el permiso del canal: {e}")
             return False
 
-    @commands.hybrid_command(name="setinfochannel", description="Allow a channel for !info commands", with_app_command=True)
+    @commands.hybrid_command(name="setinfochannel", description="Permite un canal para los comandos !info", with_app_command=True)
     @commands.has_permissions(administrator=True)
     @app_commands.default_permissions(administrator=True)
     async def set_info_channel(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -97,11 +89,11 @@ class InfoCommands(commands.Cog):
         if str(channel.id) not in self.config_data["servers"][guild_id]["info_channels"]:
             self.config_data["servers"][guild_id]["info_channels"].append(str(channel.id))
             self.save_config()
-            await ctx.send(f"✅ {channel.mention} is now allowed for `!info` commands")
+            await ctx.send(f"✅ {channel.mention} ahora está permitido para los comandos `!info`", ephemeral=True)
         else:
-            await ctx.send(f"ℹ️ {channel.mention} is already allowed for `!info` commands")
+            await ctx.send(f"ℹ️ {channel.mention} ya está permitido para los comandos `!info`", ephemeral=True)
 
-    @commands.hybrid_command(name="removeinfochannel", description="Remove a channel from !info commands", with_app_command=True)
+    @commands.hybrid_command(name="removeinfochannel", description="Elimina un canal de los comandos !info", with_app_command=True)
     @commands.has_permissions(administrator=True)
     @app_commands.default_permissions(administrator=True)
     async def remove_info_channel(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -110,13 +102,13 @@ class InfoCommands(commands.Cog):
             if str(channel.id) in self.config_data["servers"][guild_id]["info_channels"]:
                 self.config_data["servers"][guild_id]["info_channels"].remove(str(channel.id))
                 self.save_config()
-                await ctx.send(f"✅ {channel.mention} has been removed from allowed channels")
+                await ctx.send(f"✅ {channel.mention} ha sido eliminado de los canales permitidos", ephemeral=True)
             else:
-                await ctx.send(f"❌ {channel.mention} is not in the list of allowed channels")
+                await ctx.send(f"❌ {channel.mention} no está en la lista de canales permitidos", ephemeral=True)
         else:
-            await ctx.send("ℹ️ This server has no saved configuration")
+            await ctx.send("ℹ️ Este servidor no tiene ninguna configuración guardada", ephemeral=True)
 
-    @commands.hybrid_command(name="infochannels", description="List allowed channels", with_app_command=True)
+    @commands.hybrid_command(name="infochannels", description="Enumera los canales permitidos", with_app_command=True)
     @commands.has_permissions(administrator=True)
     @app_commands.default_permissions(administrator=True)
     async def list_info_channels(self, ctx: commands.Context):
@@ -129,33 +121,31 @@ class InfoCommands(commands.Cog):
                 channels.append(f"• {channel.mention if channel else f'ID: {channel_id}'}")
 
             embed = discord.Embed(
-                title="Allowed channels for !info",
+                title="Canales permitidos para !info",
                 description="\n".join(channels),
                 color=discord.Color.blue()
             )
             cooldown = self.config_data["servers"][guild_id]["config"].get("cooldown", self.config_data["global_settings"]["default_cooldown"])
-            embed.set_footer(text=f"Current cooldown: {cooldown} seconds")
+            embed.set_footer(text=f"Enfriamiento actual: {cooldown} segundos")
         else:
             embed = discord.Embed(
-                title="Allowed channels for !info",
-                description="All channels are allowed (no restriction configured)",
+                title="Canales permitidos para !info",
+                description="Todos los canales están permitidos (no hay restricciones configuradas)",
                 color=discord.Color.blue()
             )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=True)
 
-    @commands.hybrid_command(name="info", description="Displays information about a Free Fire player")
-    @app_commands.describe(uid="FREE FIRE INFO")
+    @commands.hybrid_command(name="info", description="Muestra información sobre un jugador de Free Fire")
+    @app_commands.describe(uid="INFO DE FREE FIRE")
     async def player_info(self, ctx: commands.Context, uid: str):
         guild_id = str(ctx.guild.id)
 
         if not uid.isdigit() or len(uid) < 6:
-            return await ctx.reply(" Invalid UID! It must:\n- Be only numbers\n- Have at least 6 digits", mention_author=False)
+            return await ctx.reply("¡UID inválido! Debe:\n- Contener solo números\n- Tener al menos 6 dígitos", mention_author=False, ephemeral=True)
 
         if not await self.is_channel_allowed(ctx):
-            return await ctx.send(" This command is not allowed in this channel.", ephemeral=True)
-
-
+            return await ctx.send("Este comando no está permitido en este canal.", ephemeral=True)
 
         cooldown = self.config_data["global_settings"]["default_cooldown"]
         if guild_id in self.config_data["servers"]:
@@ -165,18 +155,17 @@ class InfoCommands(commands.Cog):
             last_used = self.cooldowns[ctx.author.id]
             if (datetime.now() - last_used).seconds < cooldown:
                 remaining = cooldown - (datetime.now() - last_used).seconds
-                return await ctx.send(f" Please wait {remaining}s before using this command again", ephemeral=True)
+                return await ctx.send(f"Por favor, espera {remaining}s antes de usar este comando de nuevo.", ephemeral=True)
 
         self.cooldowns[ctx.author.id] = datetime.now()
        
-
         try:
             async with ctx.typing():
                 async with self.session.get(f"{self.api_url}?uid={uid}") as response:
                     if response.status == 404:
-                        return await ctx.send(f" Player with UID `{uid}` not found.")
+                        return await ctx.send(f"Jugador con UID `{uid}` no encontrado.", ephemeral=True)
                     if response.status != 200:
-                        return await ctx.send("API error. Try again later.")
+                        return await ctx.send("Error de la API. Inténtalo de nuevo más tarde.", ephemeral=True)
                     data = await response.json()
 
             
@@ -267,52 +256,49 @@ class InfoCommands(commands.Cog):
             if region and uid:
                 try:
                     image_url = f"{self.generate_url}?uid={uid}"
-                    print(f"Url d'image = {image_url}")
+                    print(f"URL de la imagen = {image_url}")
                     if image_url:
                         async with self.session.get(image_url) as img_file:
                             if img_file.status == 200:
                                 with io.BytesIO(await img_file.read()) as buf:
                                     file = discord.File(buf, filename=f"outfit_{uuid.uuid4().hex[:8]}.png")
-                                    await ctx.send(file=file)  # ✅ ENVOYER L'IMAGE
-                                    print("Image envoyée avec succès")
+                                    await ctx.send(file=file)  # ✅ ENVIAR IMAGEN
+                                    print("Imagen enviada con éxito")
                             else:
-                                print(f"Erreur HTTP: {img_file.status}")
+                                print(f"Error HTTP: {img_file.status}")
                 except Exception as e:
-                    print("Image generation failed:", e)
+                    print("La generación de la imagen falló:", e)
 
         except Exception as e:
-            await ctx.send(f" Unexpected error: `{e}`")
+            await ctx.send(f"Error inesperado: `{e}`", ephemeral=True)
         finally:
             gc.collect()
-
 
     async def cog_unload(self):
         await self.session.close()
 
     async def _send_player_not_found(self, ctx, uid):
         embed = discord.Embed(
-            title="❌ Player Not Found",
+            title="❌ Jugador No Encontrado",
             description=(
-                f"UID `{uid}` not found or inaccessible.\n\n"
-                "⚠️ **Note:** IND servers are currently not working."
+                f"UID `{uid}` no encontrado o inaccesible.\n\n"
+                "⚠️ **Nota:** Los servidores de IND no están funcionando actualmente."
             ),
             color=0xE74C3C
         )
         embed.add_field(
-            name="Tip",
-            value="- Make sure the UID is correct\n- Try a different UID",
+            name="Consejo",
+            value="- Asegúrate de que el UID es correcto\n- Prueba con un UID diferente",
             inline=False
         )
         await ctx.send(embed=embed, ephemeral=True)
 
     async def _send_api_error(self, ctx):
         await ctx.send(embed=discord.Embed(
-            title="⚠️ API Error",
-            description="The Free Fire API is not responding. Try again later.",
+            title="⚠️ Error de API",
+            description="La API de Free Fire no responde. Inténtalo de nuevo más tarde.",
             color=0xF39C12
-        ))
-
-
+        ), ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(InfoCommands(bot))
