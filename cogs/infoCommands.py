@@ -88,8 +88,9 @@ class InfoCommands(commands.Cog):
             print(f"Error checking channel permission: {e}")
             return False
 
-    @commands.hybrid_command(name="setinfochannel", description="Allow a channel for !info commands")
+    @commands.hybrid_command(name="setinfochannel", description="Allow a channel for !info commands", with_app_command=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     async def set_info_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         guild_id = str(ctx.guild.id)
         self.config_data["servers"].setdefault(guild_id, {"info_channels": [], "config": {}})
@@ -100,8 +101,9 @@ class InfoCommands(commands.Cog):
         else:
             await ctx.send(f"ℹ️ {channel.mention} is already allowed for `!info` commands")
 
-    @commands.hybrid_command(name="removeinfochannel", description="Remove a channel from !info commands")
+    @commands.hybrid_command(name="removeinfochannel", description="Remove a channel from !info commands", with_app_command=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     async def remove_info_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         guild_id = str(ctx.guild.id)
         if guild_id in self.config_data["servers"]:
@@ -114,7 +116,9 @@ class InfoCommands(commands.Cog):
         else:
             await ctx.send("ℹ️ This server has no saved configuration")
 
-    @commands.hybrid_command(name="infochannels", description="List allowed channels")
+    @commands.hybrid_command(name="infochannels", description="List allowed channels", with_app_command=True)
+    @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     async def list_info_channels(self, ctx: commands.Context):
         guild_id = str(ctx.guild.id)
 
