@@ -262,7 +262,7 @@ class InfoCommands(commands.Cog):
                             if img_file.status == 200:
                                 with io.BytesIO(await img_file.read()) as buf:
                                     file = discord.File(buf, filename=f"outfit_{uuid.uuid4().hex[:8]}.png")
-                                    await ctx.send(file=file)  # ✅ NO se hace reply aquí  # ✅ ENVIAR IMAGEN
+                                    await ctx.channel.send(file=file)
                                     print("Imagen enviada con éxito")
                             else:
                                 print(f"Error HTTP: {img_file.status}")
