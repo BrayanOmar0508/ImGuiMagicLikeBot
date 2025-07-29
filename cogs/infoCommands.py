@@ -251,7 +251,7 @@ class InfoCommands(commands.Cog):
 
 
             embed.set_footer(text="ImGui Magic")
-            await ctx.send(embed=embed)
+            await ctx.reply(embed=embed, mention_author=True)  # ✅ solo aquí haces reply + mención
 
             if region and uid:
                 try:
@@ -262,7 +262,7 @@ class InfoCommands(commands.Cog):
                             if img_file.status == 200:
                                 with io.BytesIO(await img_file.read()) as buf:
                                     file = discord.File(buf, filename=f"outfit_{uuid.uuid4().hex[:8]}.png")
-                                    await ctx.send(file=file)  # ✅ ENVIAR IMAGEN
+                                    await ctx.send(file=file)  # ✅ NO se hace reply aquí  # ✅ ENVIAR IMAGEN
                                     print("Imagen enviada con éxito")
                             else:
                                 print(f"Error HTTP: {img_file.status}")
